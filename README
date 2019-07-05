@@ -1,0 +1,11 @@
+reopen
+------
+
+a small xdg-open replacement.
+
+requires a config file at ~/.config/reopen.conf
+
+example config file:
+
+/^https?:\/\// qutebrowser
+/\.c$/ $EDITOR
