@@ -3,7 +3,7 @@ reopen
 
 a small xdg-open replacement.
 
-requires a config file at ~/.config/reopen.conf
+requires a config file at ~/.config/reopen/config
 
 example config file:
 

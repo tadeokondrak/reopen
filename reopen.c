@@ -7,8 +7,8 @@
 
 #define PROGRAM_NAME "reopen"
 
-static const char path_xdg[] = "/" PROGRAM_NAME ".conf";
-static const char path_home[] = "/.config/" PROGRAM_NAME ".conf";
+static const char path_xdg[] = "/" PROGRAM_NAME "/config";
+static const char path_home[] = "/.config/" PROGRAM_NAME "/config";
 
 char *config_location() {
 	const char *xdg = getenv("XDG_CONFIG_HOME");
