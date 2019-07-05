@@ -15,6 +15,10 @@ char *config_location() {
 	if (xdg) {
 		size_t xdg_len = strlen(xdg);
 		char *ret = malloc(xdg_len + sizeof(path_xdg));
+		if (!ret) {
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
 		strncpy(ret, xdg, xdg_len);
 		strncpy(ret + xdg_len, path_xdg, sizeof(path_xdg));
 		return ret;
@@ -24,6 +28,10 @@ char *config_location() {
 	if (home) {
 		size_t home_len = strlen(home);
 		char *ret = malloc(home_len + sizeof(path_home));
+		if (!ret) {
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
 		strncpy(ret, home, home_len);
 		strncpy(ret + home_len, path_home, sizeof(path_home));
 		return ret;
@@ -92,6 +100,12 @@ int main(int argc, char **argv) {
 		if (!(ret = regexec(&re, argv[1], 0, NULL, 0))) {
 			size_t p_len = strlen(p);
 			char *buf = malloc(p_len + 1 + strlen(argv[1]) + 1);
+			if (!buf) {
+				perror("malloc");
+				free(line);
+				fclose(f);
+				return EXIT_FAILURE;
+			}
 
 			strcpy(buf, p);
 			buf[p_len] = ' ';
