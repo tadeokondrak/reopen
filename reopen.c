@@ -34,13 +34,13 @@ char *config_location() {
 
 int main(int argc, char **argv) {
 	if (argc < 2) {
-		printf("usage: " PROGRAM_NAME " <URL or path>\n");
+		fprintf(stderr, "usage: " PROGRAM_NAME " <URL or path>\n");
 		return EXIT_FAILURE;
 	}
 
 	char *config_file = config_location();
 	if (!config_file) {
-		printf(
+		fprintf(stderr,
 			"neither HOME nor XDG_CONFIG_HOME set, don't know where to find "
 			"config file");
 		return EXIT_FAILURE;
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 			char buf[256];
 
 			regerror(ret, &re, buf, sizeof(buf));
-			printf("error compiling regex /%s/: %s\n", regex, buf);
+			fprintf(stderr, "error compiling regex /%s/: %s\n", regex, buf);
 
 			free(regex);
 			free(line);
@@ -113,6 +113,6 @@ int main(int argc, char **argv) {
 	free(line);
 	fclose(f);
 
-	printf("no handler found for that filetype\n");
+	fprintf(stderr, "no handler found for that filetype\n");
 	return EXIT_FAILURE;
 }
