@@ -9,79 +9,84 @@
 
 static const char path_xdg[] = "/" PROGRAM_NAME "/config";
 static const char path_home[] = "/.config/" PROGRAM_NAME "/config";
+static const char cmd_append[] = " \"$REOPEN_URI\"";
 
 char *config_location() {
-	const char *xdg = getenv("XDG_CONFIG_HOME");
-	if (xdg) {
+	const char *home, *xdg;
+	if ((xdg = getenv("XDG_CONFIG_HOME"))) {
 		size_t xdg_len = strlen(xdg);
 		char *ret = malloc(xdg_len + sizeof(path_xdg));
 		if (!ret) {
 			perror("malloc");
-			exit(EXIT_FAILURE);
+			return NULL;
 		}
-		strncpy(ret, xdg, xdg_len);
-		strncpy(ret + xdg_len, path_xdg, sizeof(path_xdg));
+		memcpy(ret, xdg, xdg_len);
+		memcpy(ret + xdg_len, path_xdg, sizeof(path_xdg));
 		return ret;
-	}
-
-	const char *home = getenv("HOME");
-	if (home) {
+	} else if ((home = getenv("HOME"))) {
 		size_t home_len = strlen(home);
 		char *ret = malloc(home_len + sizeof(path_home));
 		if (!ret) {
 			perror("malloc");
-			exit(EXIT_FAILURE);
+			return NULL;
 		}
-		strncpy(ret, home, home_len);
-		strncpy(ret + home_len, path_home, sizeof(path_home));
+		memcpy(ret, home, home_len);
+		memcpy(ret + home_len, path_home, sizeof(path_home));
 		return ret;
+	} else {
+		return NULL;
 	}
-
-	return NULL;
 }
 
 int main(int argc, char **argv) {
 	if (argc < 2) {
-		fprintf(stderr, "usage: " PROGRAM_NAME " <URL or path>\n");
+		if (argc)
+			fprintf(stderr, "usage: %s <URI or path>\n", argv[0]);
+		else
+			fprintf(stderr, "usage: " PROGRAM_NAME " <URI or path>\n");
 		return EXIT_FAILURE;
 	}
 
 	char *config_file = config_location();
 	if (!config_file) {
-		fprintf(stderr,
-			"neither HOME nor XDG_CONFIG_HOME set, don't know where to find "
-			"config file");
+		fprintf(stderr, "couldn't find config file\n");
 		return EXIT_FAILURE;
 	}
 
 	FILE *f = fopen(config_file, "r");
 	free(config_file);
 	if (!f) {
-		perror("failed to open config file");
+		perror("couldn't open config file");
 		return EXIT_FAILURE;
 	}
 
 	char *line = NULL;
 	ssize_t len = 0;
 	size_t size = 0;
+
 	while ((len = getline(&line, &size, f)) != EOF) {
 		char *p = line;
-		char *regex = NULL;
 
-		if (*p++ != '/') break;
+		if (*p++ != '/') continue;
+
 		for (; *p; p++)
 			if (*p == '/' && *(p - 1) != '\\') break;
-		if (!*p) break;
-		if (*p++ != '/') break;
-		if (*p++ != ' ') break;
+
+		if (!*p || *p++ != '/') continue;
+
+		char *regex_end = p;
+
+		for (; *p; p++)
+			if (*p != ' ' && *p != '\t') break;
+
+		if (!*p) continue;
 
 		if (line[len - 1] == '\n') line[len - 1] = '\0';
 
-		regex = strndup(line + 1, p - line - 3);
-
+		char *regex = strndup(line + 1, regex_end - line - 2);
 		regex_t re;
-
 		int ret;
+
 		if ((ret = regcomp(&re, regex, REG_EXTENDED | REG_NOSUB))) {
 			char buf[256];
 
@@ -98,26 +103,27 @@ int main(int argc, char **argv) {
 		free(regex);
 
 		if (!(ret = regexec(&re, argv[1], 0, NULL, 0))) {
-			size_t p_len = strlen(p);
-			char *buf = malloc(p_len + 1 + strlen(argv[1]) + 1);
+			size_t sh_len = strlen(p);
+			char *buf = malloc(sh_len + sizeof(cmd_append) + 1);
+
 			if (!buf) {
 				perror("malloc");
-				free(line);
-				fclose(f);
-				return EXIT_FAILURE;
+				goto cleanup;
 			}
 
-			strcpy(buf, p);
-			buf[p_len] = ' ';
-			strcpy(buf + p_len + 1, argv[1]);
+			memcpy(buf, p, sh_len);
+			memcpy(buf + sh_len, cmd_append, sizeof(cmd_append));
 
-			free(line);
-			fclose(f);
-
-			execl("/bin/sh", "sh", "-c", buf, NULL);
+			setenv("REOPEN_URI", argv[1], 1);
+			execl("/bin/sh", "sh", "-c", buf, (char *)NULL);
 
 			free(buf);
 			perror("execl");
+
+		cleanup:
+			regfree(&re);
+			free(line);
+			fclose(f);
 			return EXIT_FAILURE;
 		};
 
@@ -127,6 +133,6 @@ int main(int argc, char **argv) {
 	free(line);
 	fclose(f);
 
-	fprintf(stderr, "no handler found for that filetype\n");
+	fprintf(stderr, "no handler found for that URI or filetype\n");
 	return EXIT_FAILURE;
 }

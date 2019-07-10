@@ -7,5 +7,6 @@ requires a config file at ~/.config/reopen/config
 
 example config file:
 
-/^https?:\/\// qutebrowser
-/\.c$/ $EDITOR
+/^https?:/	qutebrowser
+/\.(mp4|mkv)$/	mpv
+/\.(txt|c)$/	$EDITOR
