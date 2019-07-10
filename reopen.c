@@ -12,28 +12,29 @@ static const char path_home[] = "/.config/" PROGRAM_NAME "/config";
 static const char cmd_append[] = " \"$REOPEN_URI\"";
 
 char *config_location() {
-	const char *home, *xdg;
-	if ((xdg = getenv("XDG_CONFIG_HOME"))) {
-		size_t xdg_len = strlen(xdg);
-		char *ret = malloc(xdg_len + sizeof(path_xdg));
+	const char *path;
+	if ((path = getenv("XDG_CONFIG_HOME"))) {
+		size_t len = strlen(path);
+		char *ret = malloc(len + sizeof(path_xdg));
 		if (!ret) {
 			perror("malloc");
 			return NULL;
 		}
-		memcpy(ret, xdg, xdg_len);
-		memcpy(ret + xdg_len, path_xdg, sizeof(path_xdg));
+		memcpy(ret, path, len);
+		memcpy(ret + len, path_xdg, sizeof(path_xdg));
 		return ret;
-	} else if ((home = getenv("HOME"))) {
-		size_t home_len = strlen(home);
-		char *ret = malloc(home_len + sizeof(path_home));
+	} else if ((path = getenv("HOME"))) {
+		size_t len = strlen(path);
+		char *ret = malloc(len + sizeof(path_home));
 		if (!ret) {
 			perror("malloc");
 			return NULL;
 		}
-		memcpy(ret, home, home_len);
-		memcpy(ret + home_len, path_home, sizeof(path_home));
+		memcpy(ret, path, len);
+		memcpy(ret + len, path_home, sizeof(path_home));
 		return ret;
 	} else {
+		fprintf(stderr, "neither XDG_CONFIG_HOME or HOME are set");
 		return NULL;
 	}
 }
